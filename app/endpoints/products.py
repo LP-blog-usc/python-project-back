@@ -1,10 +1,11 @@
 # app/endpoints/products.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas import ProductCreate, ProductUpdate, ProductResponse, SaleRequest
-from app.crud import process_sale, create_product, get_product_by_id, update_product, delete_product, get_all_products
+from app.schemas import SalesReport, CreditAccountCreate, CreditPurchaseCreate, CreditAccountResponse, ReservationCreate, ReservationResponse, ProductCreate, ProductUpdate, ProductResponse, SaleRequest
+from app.crud import get_sales_report, get_date_range, create_credit_account, register_credit_purchase, get_credit_account_balance, create_reservation, get_all_reservations, process_sale, create_product, get_product_by_id, update_product, delete_product, get_all_products
 from app.config import engine
 from typing import List
+from datetime import datetime
 
 router = APIRouter()
 
@@ -44,3 +45,45 @@ def list_products(db: Session = Depends(get_db)):
 def make_sale(sale: SaleRequest, db: Session = Depends(get_db)):
     db_product = process_sale(db, sale.product_id, sale.quantity)
     return db_product
+
+@router.post("/products/reserve", response_model=ReservationResponse)
+def make_reservation(reservation: ReservationCreate, db: Session = Depends(get_db)):
+    db_reservation = create_reservation(db, reservation)
+    return db_reservation
+
+@router.get("/products/reservations", response_model=List[ReservationResponse])
+def list_reservations(db: Session = Depends(get_db)):
+    reservations = get_all_reservations(db)
+    return reservations
+
+@router.post("/credit/accounts", response_model=CreditAccountResponse)
+def add_credit_account(account: CreditAccountCreate, db: Session = Depends(get_db)):
+    db_account = create_credit_account(db, account)
+    return db_account
+
+@router.post("/credit/purchases", response_model=CreditAccountResponse)
+def add_credit_purchase(purchase: CreditPurchaseCreate, db: Session = Depends(get_db)):
+    db_purchase = register_credit_purchase(db, purchase)
+    return db_purchase.account
+
+@router.get("/credit/accounts/{account_id}", response_model=CreditAccountResponse)
+def view_credit_account(account_id: int, db: Session = Depends(get_db)):
+    db_account = get_credit_account_balance(db, account_id)
+    if not db_account:
+        raise HTTPException(status_code=404, detail="Credit account not found")
+    return db_account
+
+@router.get("/reports/sales/{period}", response_model=SalesReport)
+def sales_report(period: str, db: Session = Depends(get_db)):
+    try:
+        start_date, end_date = get_date_range(period)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    report_data = get_sales_report(db, start_date, end_date)
+    report = SalesReport(
+        report_date=datetime.today().date(),
+        total_sales=report_data["total_sales"],
+        products_sold=report_data["products_sold"]
+    )
+    return report
