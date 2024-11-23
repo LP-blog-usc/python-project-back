@@ -1,7 +1,7 @@
 # app/schemas.py
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from datetime import date
 
 class UserLogin(BaseModel):
@@ -80,3 +80,15 @@ class SalesReport(BaseModel):
 
     class Config:
         orm_mode = True
+
+class ProductSales(BaseModel):
+    product_id: int
+    product_name: str
+    quantity_sold: int
+
+class SalesReport(BaseModel):
+    report_date: date
+    total_sales: float
+    products_sold: List[ProductSales]
+    most_sold_products: Optional[List[ProductSales]] = []
+    least_sold_products: Optional[List[ProductSales]] = []

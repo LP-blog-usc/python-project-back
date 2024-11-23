@@ -1,8 +1,9 @@
 # app/crud.py
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from datetime import datetime, timedelta
-from app.models import CreditPurchase, Product, User, Product, Reservation, CreditAccount, CreditPurchase
+from app.models import Sale, CreditPurchase, Product, User, Product, Reservation, CreditAccount, CreditPurchase
 from app.schemas import ProductStatistics, ProductCreate, ProductUpdate, CreditAccountCreate, CreditPurchaseCreate, ReservationCreate 
 from typing import List
 
@@ -160,3 +161,50 @@ def get_date_range(period: str):
     else:
         raise ValueError("Periodo inválido")
     return start_date, end_date
+
+def get_all_credit_accounts(db: Session):
+    return db.query(CreditAccount).all()
+
+def get_most_sold_products(db: Session, start_date: datetime, end_date: datetime):
+    """
+    Retorna los productos más vendidos dentro del rango de fechas.
+    """
+    products = (
+        db.query(
+            Product.id.label("product_id"),
+            Product.name.label("product_name"),
+            func.sum(Sale.quantity).label("quantity_sold"),
+        )
+        .join(Sale, Sale.product_id == Product.id)
+        .filter(Sale.date.between(start_date, end_date))
+        .group_by(Product.id)
+        .order_by(func.sum(Sale.quantity).desc())
+        .limit(5)
+        .all()
+    )
+    return [
+        {"product_id": product.product_id, "product_name": product.product_name, "quantity_sold": product.quantity_sold}
+        for product in products
+    ]
+
+def get_least_sold_products(db: Session, start_date: datetime, end_date: datetime):
+    """
+    Retorna los productos menos vendidos dentro del rango de fechas.
+    """
+    products = (
+        db.query(
+            Product.id.label("product_id"),
+            Product.name.label("product_name"),
+            func.sum(Sale.quantity).label("quantity_sold"),
+        )
+        .join(Sale, Sale.product_id == Product.id)
+        .filter(Sale.date.between(start_date, end_date))
+        .group_by(Product.id)
+        .order_by(func.sum(Sale.quantity))
+        .limit(5)
+        .all()
+    )
+    return [
+        {"product_id": product.product_id, "product_name": product.product_name, "quantity_sold": product.quantity_sold}
+        for product in products
+    ]

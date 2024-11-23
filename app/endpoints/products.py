@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas import SalesReport, CreditAccountCreate, CreditPurchaseCreate, CreditAccountResponse, ReservationCreate, ReservationResponse, ProductCreate, ProductUpdate, ProductResponse, SaleRequest
-from app.crud import get_sales_report, get_date_range, create_credit_account, register_credit_purchase, get_credit_account_balance, create_reservation, get_all_reservations, process_sale, create_product, get_product_by_id, update_product, delete_product, get_all_products
+from app.crud import get_least_sold_products, get_most_sold_products, get_all_credit_accounts, get_sales_report, get_date_range, create_credit_account, register_credit_purchase, get_credit_account_balance, create_reservation, get_all_reservations, process_sale, create_product, get_product_by_id, update_product, delete_product, get_all_products
 from app.config import engine
 from typing import List
 from datetime import datetime
@@ -81,9 +81,20 @@ def sales_report(period: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
     report_data = get_sales_report(db, start_date, end_date)
+    most_sold_products = get_most_sold_products(db, start_date, end_date)
+    least_sold_products = get_least_sold_products(db, start_date, end_date)
+
     report = SalesReport(
         report_date=datetime.today().date(),
         total_sales=report_data["total_sales"],
-        products_sold=report_data["products_sold"]
+        products_sold=report_data["products_sold"],
+        most_sold_products=most_sold_products,
+        least_sold_products=least_sold_products,
     )
     return report
+
+
+@router.get("/credit/accounts", response_model=List[CreditAccountResponse])
+def list_credit_accounts(db: Session = Depends(get_db)):
+    db_accounts = get_all_credit_accounts(db)
+    return db_accounts

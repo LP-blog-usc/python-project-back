@@ -22,6 +22,7 @@ class Product(Base):
 
     # Relación con las reservas
     reservations = relationship("Reservation", back_populates="product")
+    sales = relationship("Sale", back_populates="product")
 
 class Reservation(Base):
     __tablename__ = "reservations"
@@ -58,3 +59,15 @@ class CreditPurchase(Base):
     # Relaciones con cuentas de crédito y productos
     account = relationship("CreditAccount", back_populates="purchases")
     product = relationship("Product")
+
+class Sale(Base):
+    __tablename__ = "sales"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    total_price = Column(Float, nullable=False)
+    date = Column(DateTime, nullable=False)
+
+    product = relationship("Product", back_populates="sales")
+
