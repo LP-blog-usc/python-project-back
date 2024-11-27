@@ -35,7 +35,8 @@ class SaleRequest(BaseModel):
 
 class PaymentMethod(str, Enum):
     contra_entrega = "contra_entrega"
-    anticipado = "anticipado"
+    tarjeta = "tarjeta"
+    efectivo = "efectivo"
 
 class ReservationCreate(BaseModel):
     product_id: int

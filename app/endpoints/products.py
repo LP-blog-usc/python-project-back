@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas import SalesReport, CreditAccountCreate, CreditPurchaseCreate, CreditAccountResponse, ReservationCreate, ReservationResponse, ProductCreate, ProductUpdate, ProductResponse, SaleRequest
-from app.crud import get_least_sold_products, get_most_sold_products, get_all_credit_accounts, get_sales_report, get_date_range, create_credit_account, register_credit_purchase, get_credit_account_balance, create_reservation, get_all_reservations, process_sale, create_product, get_product_by_id, update_product, delete_product, get_all_products
+from app.crud import process_sale_and_record, get_least_sold_products, get_most_sold_products, get_all_credit_accounts, get_sales_report, get_date_range, create_credit_account, register_credit_purchase, get_credit_account_balance, create_reservation, get_all_reservations, process_sale, create_product, get_product_by_id, update_product, delete_product, get_all_products
 from app.config import engine
 from typing import List
 from datetime import datetime
@@ -42,8 +42,10 @@ def list_products(db: Session = Depends(get_db)):
     return products
 
 @router.post("/products/sale", response_model=ProductResponse)
-def make_sale(sale: SaleRequest, db: Session = Depends(get_db)):
-    db_product = process_sale(db, sale.product_id, sale.quantity)
+def register_sale(sale: SaleRequest, db: Session = Depends(get_db)):
+    db_product = process_sale_and_record(db, sale.product_id, sale.quantity)
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found or insufficient quantity")
     return db_product
 
 @router.post("/products/reserve", response_model=ReservationResponse)

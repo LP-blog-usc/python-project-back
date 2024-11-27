@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from app.models import Sale, CreditPurchase, Product, User, Product, Reservation, CreditAccount, CreditPurchase
 from app.schemas import ProductStatistics, ProductCreate, ProductUpdate, CreditAccountCreate, CreditPurchaseCreate, ReservationCreate 
 from typing import List
+from sqlalchemy.exc import IntegrityError
 
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
@@ -208,3 +209,35 @@ def get_least_sold_products(db: Session, start_date: datetime, end_date: datetim
         {"product_id": product.product_id, "product_name": product.product_name, "quantity_sold": product.quantity_sold}
         for product in products
     ]
+
+def process_sale_and_record(db: Session, product_id: int, quantity: int):
+    """
+    Procesa una venta: reduce la cantidad en inventario y registra la venta en la tabla sales.
+    """
+    product = db.query(Product).filter(Product.id == product_id).first()
+
+    if not product or product.quantity < quantity:
+        return None
+
+    # Reducir la cantidad en inventario
+    product.quantity -= quantity
+
+    # Calcular el precio total
+    total_price = product.price * quantity
+
+    # Registrar la venta en la tabla sales
+    sale = Sale(
+        product_id=product.id,
+        quantity=quantity,
+        total_price=total_price,
+        date=datetime.utcnow(),
+    )
+    db.add(sale)
+
+    try:
+        db.commit()
+        db.refresh(product)
+        return product
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error processing the sale")
