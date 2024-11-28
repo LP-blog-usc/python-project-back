@@ -54,7 +54,7 @@ class CreditPurchase(Base):
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     amount = Column(Float, nullable=False)  # Monto de la compra
     status = Column(String(50), nullable=False, default="pending")  # Estado de la compra ("pending" o "paid")
-    date = Column(DateTime, default=datetime.utcnow)  # Fecha de la compra
+    date = Column(DateTime, default=datetime.now)  # Fecha de la compra
 
     # Relaciones con cuentas de crédito y productos
     account = relationship("CreditAccount", back_populates="purchases")

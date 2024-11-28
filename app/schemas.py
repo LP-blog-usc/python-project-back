@@ -72,15 +72,7 @@ class CreditAccountResponse(BaseModel):
 class ProductStatistics(BaseModel):
     product_id: int
     product_name: str
-    total_sold: int
-
-class SalesReport(BaseModel):
-    report_date: date
-    total_sales: float
-    products_sold: List[ProductStatistics]
-
-    class Config:
-        orm_mode = True
+    total_sold: int 
 
 class ProductSales(BaseModel):
     product_id: int
@@ -93,3 +85,6 @@ class SalesReport(BaseModel):
     products_sold: List[ProductSales]
     most_sold_products: Optional[List[ProductSales]] = []
     least_sold_products: Optional[List[ProductSales]] = []
+
+    class Config:
+        orm_mode = True

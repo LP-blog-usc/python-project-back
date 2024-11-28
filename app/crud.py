@@ -116,10 +116,9 @@ def get_credit_account_balance(db: Session, account_id: int):
 
 def get_sales_report(db: Session, start_date: datetime, end_date: datetime):
     # Total de ventas en el rango de fechas
-    total_sales = db.query(func.sum(CreditPurchase.amount)).filter(
-        CreditPurchase.status == "paid",
-        CreditPurchase.date >= start_date,
-        CreditPurchase.date < end_date
+    total_sales = db.query(func.sum(Sale.total_price)).filter(
+        Sale.date >= start_date,
+        Sale.date < end_date
     ).scalar() or 0.0
 
     # Productos vendidos en el rango de fechas
@@ -151,8 +150,8 @@ def get_sales_report(db: Session, start_date: datetime, end_date: datetime):
 def get_date_range(period: str):
     today = datetime.today()
     if period == "daily":
-        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = start_date + timedelta(days=1)
+        start_date = today.replace(hour=0, minute=1, second=0, microsecond=0)
+        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif period == "weekly":
         start_date = today - timedelta(days=today.weekday())  # Lunes de esta semana
         end_date = start_date + timedelta(days=7)
@@ -230,7 +229,7 @@ def process_sale_and_record(db: Session, product_id: int, quantity: int):
         product_id=product.id,
         quantity=quantity,
         total_price=total_price,
-        date=datetime.utcnow(),
+        date=datetime.now(),
     )
     db.add(sale)
 
